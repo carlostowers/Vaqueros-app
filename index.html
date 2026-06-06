@@ -797,8 +797,10 @@ function toast(msg, isError=false, dur=2800) {
 // ---- DASHBOARD ----
 function renderDashboard(teamFilter) {
   if (teamFilter) currentFilter.dash = teamFilter;
+
   const tf = currentFilter.dash;
   const players = DB.players.filter(p => tf === 'ALL' || p.team === tf);
+
   const latestEntries = DB.players.map(p => playerEntries(p.id)[0]).filter(Boolean);
   const teamAvgRpe = latestEntries.length
     ? (latestEntries.reduce((s,e)=>s+(e.rpe||0),0)/latestEntries.length).toFixed(1) : '—';
@@ -811,12 +813,20 @@ function renderDashboard(teamFilter) {
     <div class="stat-card"><div class="stat-label">Carga Total</div><div class="stat-value">${totalLoad.toLocaleString()}</div><div class="stat-sub">unidades acumuladas</div></div>
   `;
 
+  ['14M','15M','17M'].forEach(t => {
+    const checkbox = document.getElementById('tmode-' + t.toLowerCase());
+    if (checkbox) {
+      checkbox.checked = !!(TEAM_SETTINGS[t] && TEAM_SETTINGS[t].tournamentMode);
+    }
+  });
+
   const alertPlayers = [];
   DB.players.forEach(p => {
     const last = playerEntries(p.id)[0];
     const reasons = isAlert(last);
     if (reasons) alertPlayers.push({p, last, reasons});
   });
+
   const badge = document.getElementById('alert-badge');
   badge.style.display = alertPlayers.length ? 'block' : 'none';
   badge.textContent = alertPlayers.length + ' ⚠';
@@ -836,6 +846,15 @@ function renderDashboard(teamFilter) {
     </div>` : '';
 
   document.getElementById('dash-players').innerHTML = players.map(p => playerCard(p)).join('');
+}
+
+function toggleTournament(team, on) {
+  if (!TEAM_SETTINGS[team]) {
+    TEAM_SETTINGS[team] = { tournamentMode: false };
+  }
+  TEAM_SETTINGS[team].tournamentMode = !!on;
+  saveTeamSettings();
+  renderDashboard();
 }
 
 function filterDash(team, el) {
