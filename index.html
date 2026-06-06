@@ -446,6 +446,21 @@ input[type="file"] { display: none; }
       <div class="filter-tab" onclick="filterDash('14M',this)">14M</div>
     </div>
   </div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:12px;color:var(--muted);align-items:center;">
+  <span style="text-transform:uppercase;letter-spacing:0.08em;font-weight:600;color:var(--muted);">Modo Torneo:</span>
+  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+    <input type="checkbox" id="tmode-14m" onchange="toggleTournament('14M', this.checked)" style="accent-color:#1a7fd4;">
+    <span>14M</span>
+  </label>
+  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+    <input type="checkbox" id="tmode-15m" onchange="toggleTournament('15M', this.checked)" style="accent-color:#1a7fd4;">
+    <span>15M</span>
+  </label>
+  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+    <input type="checkbox" id="tmode-17m" onchange="toggleTournament('17M', this.checked)" style="accent-color:#1a7fd4;">
+    <span>17M</span>
+  </label>
+</div>
   <div class="players-grid" id="dash-players"></div>
 </div>
 
@@ -590,12 +605,37 @@ let currentPlayerId = null;
 let formState = {};
 let playerLoadChartInstance = null;
 let teamLoadChartInstance = null;
+  let TEAM_SETTINGS = {
+  '14M': { tournamentMode: false },
+  '15M': { tournamentMode: false },
+  '17M': { tournamentMode: false }
+};
+
+function loadTeamSettings() {
+  const raw = localStorage.getItem('vaq_team_settings');
+  if (!raw) return;
+  try {
+    const parsed = JSON.parse(raw);
+    ['14M','15M','17M'].forEach(t => {
+      if (parsed[t] && typeof parsed[t].tournamentMode === 'boolean') {
+        TEAM_SETTINGS[t].tournamentMode = parsed[t].tournamentMode;
+      }
+    });
+  } catch(e) {
+    console.error('Error cargando TEAM_SETTINGS', e);
+  }
+}
+
+function saveTeamSettings() {
+  localStorage.setItem('vaq_team_settings', JSON.stringify(TEAM_SETTINGS));
+}
 
 async function init() {
   if (!ensureStaffAccess()) return;
 
   showLoading(true);
   try {
+    loadTeamSettings();
     await seedPlayersIfNeeded();
     await loadAll();
   } catch(e) {
