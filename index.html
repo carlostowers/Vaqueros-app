@@ -669,7 +669,29 @@ function goBack() { showPage(prevPage === 'player' ? 'dashboard' : prevPage); }
 function checkURLPlayer() {
   const params = new URLSearchParams(window.location.search);
   const pid = params.get('player');
-  if (pid) { showPage('player', pid); return true; }
+  if (pid) {
+    // Modo jugador: esconder navegación y páginas de staff
+    const nav = document.querySelector('nav');
+    if (nav) nav.style.display = 'none';
+
+    const staffPages = ['page-dashboard','page-roster','page-records','page-import'];
+    staffPages.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.display = 'none';
+        el.classList.remove('active');
+      }
+    });
+
+    const playerPage = document.getElementById('page-player');
+    if (playerPage) {
+      playerPage.style.display = 'block';
+      playerPage.classList.add('active');
+    }
+
+    renderPlayerPage(pid);
+    return true;
+  }
   return false;
 }
 
@@ -877,7 +899,9 @@ function playerCard(p, rosterMode=false) {
         <div class="wd ${wdClass('soreness',last.soreness)}" title="Dolor muscular"></div>
         <div class="wd ${wdClass('stress',last.stress)}" title="Estrés"></div>
       </div>` : ''}
-      ${rosterMode ? `<a class="card-link-btn" href="${waUrl}" target="_blank" onclick="event.stopPropagation()">📲 Enviar link WhatsApp</a>` : ''}
+      ${(rosterMode && !new URLSearchParams(window.location.search).get('player'))
+  ? `<a class="card-link-btn" href="${waUrl}" target="_blank" onclick="event.stopPropagation()">📲 Enviar link WhatsApp</a>`
+  : ''}
     </div>`;
 }
 
