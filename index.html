@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaqueros — Carga & Bienestar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy: #080f1e;
+  --navy-mid: #0e1c35;
+  --navy-light: #163058;
+  --gold: #1a7fd4;
+  --gold-light: #4da6f5;
+  --gold-dim: #0d4a8a;
+  --white: #f5f7fa;
+  --muted: #8899bb;
+  --border: rgba(100,140,220,0.15);
+  --card: rgba(255,255,255,0.04);
+  --card-hover: rgba(255,255,255,0.07);
+  --red: #e05252;
+  --orange: #e08832;
+  --green: #52c07a;
+  --blue: #4a9edd;
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body: 'Barlow', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-body); background: var(--navy); color: var(--white); min-height: 100vh; font-size: 15px; }
+
+nav {
+  background: rgba(10,22,40,0.97); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px);
+}
+.nav-inner {
+  max-width: 1280px; margin: 0 auto;
+  display: flex; align-items: center; gap: 0; padding: 0 1.5rem; height: 58px;
+}
+.logo {
+  font-family: var(--font-display); font-size: 22px; font-weight: 800;
+  letter-spacing: 0.05em; color: var(--gold); text-transform: uppercase;
+  margin-right: 2.5rem; white-space: nowrap; display: flex; align-items: center; gap: 10px;
+}
+.logo img { height: 32px; width: auto; }
+.nav-links { display: flex; gap: 0; }
+.nav-link {
+  padding: 0 1.1rem; height: 58px; display: flex; align-items: center;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+}
+.nav-link:hover { color: var(--white); }
+.nav-link.active { color: var(--gold); border-bottom-color: var(--gold); }
+.nav-spacer { flex: 1; }
+.nav-badge {
+  font-size: 11px; background: var(--red); color: #fff;
+  padding: 3px 9px; border-radius: 20px; font-weight: 700; letter-spacing: 0.04em;
+}
+
+.page { display: none; max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+.page.active { display: block; }
+
+.page-title {
+  font-family: var(--font-display); font-size: 32px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.05em; color: var(--white);
+  display: flex; align-items: center; gap: 12px; margin-bottom: 0.4rem;
+}
+.page-title .accent { color: var(--gold); }
+.page-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 2rem; }
+
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 12px; margin-bottom: 2rem; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.2rem 1.4rem;
+}
+.stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: var(--font-display); font-size: 34px; font-weight: 700; color: var(--white); line-height: 1; }
+.stat-value.gold { color: var(--gold); }
+.stat-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.alerts-box {
+  background: rgba(224,82,82,0.08); border: 1px solid rgba(224,82,82,0.3);
+  border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 2rem;
+}
+.alerts-title {
+  font-family: var(--font-display); font-size: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: var(--red); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px;
+}
+.alert-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid rgba(224,82,82,0.1); font-size: 13px;
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+.alert-dot.orange { background: var(--orange); }
+.alert-player { font-weight: 600; color: var(--white); }
+.alert-reason { color: var(--muted); }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.section-title {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--white);
+}
+.filter-tabs { display: flex; gap: 6px; }
+.filter-tab {
+  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.filter-tab.active, .filter-tab:hover { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+.players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 12px; }
+
+.player-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.1rem 1.3rem;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s; position: relative;
+}
+.player-card:hover { background: var(--card-hover); border-color: rgba(26,127,212,0.3); }
+.player-card.alert-red { border-left: 3px solid var(--red); }
+.player-card.alert-orange { border-left: 3px solid var(--orange); }
+
+.player-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.player-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 17px; font-weight: 800;
+  flex-shrink: 0; color: var(--navy);
+}
+.av-17m { background: #1a7fd4; color: #fff; }
+.av-15m { background: #0d9488; color: #fff; }
+.av-14m { background: #6366f1; color: #fff; }
+.player-info { flex: 1; min-width: 0; }
+.player-name {
+  font-family: var(--font-display); font-size: 17px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.player-meta { display: flex; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+.player-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.badge-17m { background: rgba(26,127,212,0.2); color: var(--gold); }
+.badge-15m { background: rgba(13,148,136,0.2); color: #2dd4bf; }
+.badge-14m { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+.badge-pos { background: rgba(255,255,255,0.1); color: var(--muted); }
+
+.player-stats { display: flex; gap: 10px; }
+.pstat { text-align: center; flex: 1; }
+.pstat-val { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--white); line-height: 1; }
+.pstat-val.rpe-high { color: var(--red); }
+.pstat-val.rpe-mid { color: var(--orange); }
+.pstat-val.rpe-ok { color: var(--green); }
+.pstat-lbl { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+
+.wellness-dots { display: flex; gap: 5px; margin-top: 8px; }
+.wd { width: 10px; height: 10px; border-radius: 50%; }
+.wd-green { background: var(--green); }
+.wd-orange { background: var(--orange); }
+.wd-red { background: var(--red); }
+.wd-gray { background: rgba(255,255,255,0.2); }
+
+.card-link-btn {
+  display: block; width: 100%; margin-top: 10px;
+  background: rgba(26,127,212,0.1); border: 1px solid rgba(26,127,212,0.3);
+  color: var(--gold); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 7px; border-radius: 7px; cursor: pointer; text-align: center;
+  transition: background 0.15s;
+}
+.card-link-btn:hover { background: rgba(26,127,212,0.2); }
+
+.player-page-header {
+  background: var(--navy-mid); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.8rem 2rem; margin-bottom: 2rem;
+  display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap;
+}
+.player-page-avatar {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 28px; font-weight: 800; flex-shrink: 0;
+}
+.player-page-info { flex: 1; min-width: 200px; }
+.player-page-name {
+  font-family: var(--font-display); font-size: 36px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.05em; line-height: 1; margin-bottom: 8px;
+}
+.player-page-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.player-page-link {
+  background: rgba(26,127,212,0.12); border: 1px solid rgba(26,127,212,0.4);
+  color: var(--gold); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.05em; padding: 6px 14px; border-radius: 8px;
+  cursor: pointer; transition: background 0.15s; white-space: nowrap;
+}
+.player-page-link:hover { background: rgba(26,127,212,0.22); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr; } }
+.form-block { display: flex; flex-direction: column; gap: 6px; }
+.form-block.full { grid-column: 1/-1; }
+.form-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.form-input, .form-select, .form-textarea {
+  background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; color: var(--white);
+  font-family: var(--font-body); font-size: 14px; transition: border-color 0.15s; -webkit-appearance: none;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--gold); }
+.form-select option { background: var(--navy-mid); }
+.form-textarea { resize: vertical; min-height: 70px; }
+
+.rpe-grid { display: grid; grid-template-columns: repeat(10,1fr); gap: 6px; }
+.rpe-btn {
+  aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--white);
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  cursor: pointer; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.rpe-btn:hover { background: rgba(26,127,212,0.2); border-color: var(--gold); }
+.rpe-btn.selected { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.rpe-btn[data-rpe="8"].selected,.rpe-btn[data-rpe="9"].selected,.rpe-btn[data-rpe="10"].selected {
+  background: var(--red); border-color: var(--red); color: #fff;
+}
+
+.wellness-group { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; }
+.wellness-btn {
+  border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--muted);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  cursor: pointer; padding: 8px 4px; text-align: center;
+  transition: all 0.12s; line-height: 1.3;
+}
+.wellness-btn:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+.wellness-btn.selected { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+.form-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+}
+.form-section-title {
+  font-family: var(--font-display); font-size: 14px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 1rem;
+}
+
+.save-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--gold); color: var(--navy); font-family: var(--font-body);
+  font-size: 14px; font-weight: 700; padding: 12px 28px; border-radius: 9px;
+  border: none; cursor: pointer; letter-spacing: 0.04em; transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent; color: var(--white); font-family: var(--font-body);
+  font-size: 14px; font-weight: 600; padding: 12px 22px; border-radius: 9px;
+  border: 1px solid var(--border); cursor: pointer; transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--card-hover); }
+.btn-danger {
+  background: rgba(224,82,82,0.15); color: var(--red); font-family: var(--font-body);
+  font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 9px;
+  border: 1px solid rgba(224,82,82,0.3); cursor: pointer;
+}
+
+.history-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history-table th {
+  background: rgba(255,255,255,0.04); color: var(--muted);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 10px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border);
+}
+.history-table td { padding: 10px 14px; border-bottom: 1px solid rgba(100,140,220,0.08); color: var(--white); white-space: nowrap; }
+.history-table tr:last-child td { border-bottom: none; }
+.history-table tr:hover td { background: var(--card); }
+.rpe-pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-family: var(--font-display); font-size: 13px; font-weight: 700; }
+.rpe-high { background: rgba(224,82,82,0.2); color: var(--red); }
+.rpe-mid { background: rgba(224,136,50,0.2); color: var(--orange); }
+.rpe-low { background: rgba(82,192,122,0.2); color: var(--green); }
+
+.filters-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; }
+.filter-input {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--white); font-size: 13px; padding: 8px 14px;
+  border-radius: 8px; font-family: var(--font-body);
+}
+.filter-input:focus { outline: none; border-color: var(--gold); }
+.export-row { display: flex; gap: 8px; margin-left: auto; }
+
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--gold); color: var(--navy); font-weight: 700; font-size: 14px;
+  padding: 12px 22px; border-radius: 10px; z-index: 999;
+  opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.error { background: var(--red); color: #fff; }
+
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--muted); font-size: 13px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  cursor: pointer; margin-bottom: 1.5rem; transition: color 0.15s;
+}
+.back-btn:hover { color: var(--gold); }
+
+.io-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.io-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--white); margin-bottom: 0.8rem; }
+.io-desc { font-size: 13px; color: var(--muted); margin-bottom: 1rem; }
+.io-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.file-input-label {
+  background: rgba(255,255,255,0.08); border: 1px dashed var(--border);
+  color: var(--muted); font-size: 13px; font-weight: 600;
+  padding: 10px 18px; border-radius: 9px; cursor: pointer; transition: all 0.15s;
+}
+.file-input-label:hover { border-color: var(--gold); color: var(--gold); }
+input[type="file"] { display: none; }
+.no-data { color: var(--muted); font-size: 14px; padding: 2rem; text-align: center; }
+
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(10,22,40,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; flex-direction: column; gap: 16px;
+}
+.loading-spinner {
+  width: 40px; height: 40px; border: 3px solid var(--border);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--muted); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+@media(max-width:700px){
+  .nav-links { display: none; }
+  .page { padding: 1.2rem 1rem 3rem; }
+  .players-grid { grid-template-columns: 1fr; }
+  .player-page-header { flex-direction: column; gap: 1rem; }
+  .rpe-grid { grid-template-columns: repeat(5,1fr); }
+}
+
+.field-group { margin-bottom: 1.2rem; }
+.field-label { display: block; font-weight: 600; margin-bottom: 0.25rem; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.field-help { font-size: 12px; color: var(--muted); margin-bottom: 0.5rem; }
+.field-input, .field-textarea {
+  width: 100%; padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.06);
+  color: var(--white); font-family: var(--font-body); font-size: 14px;
+}
+.field-input:focus, .field-textarea:focus { outline: none; border-color: var(--gold); }
+.field-textarea { resize: vertical; min-height: 70px; }
+.btn-group, .btn-group-rpe, .btn-group-compact { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn-rpe {
+  flex: 1 1 calc(10% - 6px); aspect-ratio: 1;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--white);
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  cursor: pointer; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-rpe:hover { background: rgba(26,127,212,0.2); border-color: var(--gold); }
+.btn-rpe.active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.btn-rpe[data-value="8"].active, .btn-rpe[data-value="9"].active, .btn-rpe[data-value="10"].active {
+  background: var(--red); border-color: var(--red); color: #fff;
+}
+.btn-option {
+  flex: 1 1 calc(20% - 6px); padding: 8px 4px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--muted);
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  text-align: center; transition: all 0.12s; line-height: 1.3;
+}
+.btn-option:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+.btn-option.active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.btn-group-compact .btn-option { flex: 1 1 calc(50% - 6px); }
+.pain-zones-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn-zone {
+  flex: 1 1 calc(50% - 6px); padding: 8px 6px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--muted);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  text-align: center; transition: all 0.12s;
+}
+.btn-zone:hover { border-color: var(--gold); color: var(--white); }
+.btn-zone.selected { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+/* Chart sections */
+.chart-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+}
+.chart-section-title {
+  font-family: var(--font-display); font-size: 16px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em; color: var(--white); margin-bottom: 0.3rem;
+}
+.chart-section-sub { font-size: 12px; color: var(--muted); margin-bottom: 1.2rem; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo"><img src="https://i.ibb.co/93yx7VYn/IMG-2820-3.jpg" alt="Vaqueros" style="height:36px;width:auto;object-fit:contain;"> <span style="color:var(--white);font-size:18px;font-weight:700;letter-spacing:0.04em;">Carlos</span></div>
+    <div class="nav-links">
+      <div class="nav-link active" onclick="showPage('dashboard')">Dashboard</div>
+      <div class="nav-link" onclick="showPage('roster')">Roster</div>
+      <div class="nav-link" onclick="showPage('records')">Historial</div>
+      <div class="nav-link" onclick="showPage('import')">Datos</div>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-badge" id="alert-badge" style="display:none"></div>
+  </div>
+</nav>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Cargando datos...</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="page-title"><span class="accent">▲</span> Panel del Staff</div>
+  <div class="page-subtitle">Carga interna y bienestar del equipo — Club Vaqueros</div>
+  <div class="stats-row" id="dash-stats"></div>
+  <div id="dash-alerts"></div>
+
+  <!-- GRÁFICA DE CARGA POR EQUIPO -->
+  <div class="chart-section">
+    <div class="chart-section-title">Carga interna por equipo — últimos 7 días</div>
+    <div class="chart-section-sub">Carga media por jugador activo (RPE × minutos). Jugador activo = al menos 1 entrada en la semana.</div>
+    <div style="position:relative;height:240px;">
+      <canvas id="team-load-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Jugadores</div>
+    <div class="filter-tabs" id="dash-filters">
+      <div class="filter-tab active" onclick="filterDash('ALL',this)">Todos</div>
+      <div class="filter-tab" onclick="filterDash('17M',this)">17M</div>
+      <div class="filter-tab" onclick="filterDash('15M',this)">15M</div>
+      <div class="filter-tab" onclick="filterDash('14M',this)">14M</div>
+    </div>
+  </div>
+  <div class="players-grid" id="dash-players"></div>
+</div>
+
+<!-- ROSTER -->
+<div class="page" id="page-roster">
+  <div class="page-title"><span class="accent">▲</span> Roster</div>
+  <div class="page-subtitle">Todos los jugadores — links de check-in por WhatsApp</div>
+  <div class="section-header">
+    <div></div>
+    <div class="filter-tabs" id="roster-filters">
+      <div class="filter-tab active" onclick="filterRoster('ALL',this)">Todos</div>
+      <div class="filter-tab" onclick="filterRoster('17M',this)">17M</div>
+      <div class="filter-tab" onclick="filterRoster('15M',this)">15M</div>
+      <div class="filter-tab" onclick="filterRoster('14M',this)">14M</div>
+    </div>
+  </div>
+  <div class="players-grid" id="roster-grid"></div>
+</div>
+
+<!-- PLAYER PAGE -->
+<div class="page" id="page-player">
+  <div class="back-btn" onclick="goBack()">← Volver</div>
+  <div id="player-content"></div>
+</div>
+
+<!-- RECORDS -->
+<div class="page" id="page-records">
+  <div class="page-title"><span class="accent">▲</span> Historial Global</div>
+  <div class="page-subtitle">Todas las entradas RPE y bienestar</div>
+  <div class="filters-row">
+    <input class="filter-input" type="text" placeholder="Buscar jugador..." id="rec-search" oninput="renderRecords()">
+    <select class="filter-input" id="rec-team" onchange="renderRecords()">
+      <option value="">Todos los equipos</option>
+      <option>14M</option><option>15M</option><option>17M</option>
+    </select>
+    <input class="filter-input" type="date" id="rec-from" onchange="renderRecords()">
+    <input class="filter-input" type="date" id="rec-to" onchange="renderRecords()">
+    <div class="export-row">
+      <button class="btn-secondary" onclick="exportCSV()">↓ CSV</button>
+      <button class="btn-secondary" onclick="exportJSON()">↓ JSON</button>
+    </div>
+  </div>
+  <div id="records-table"></div>
+</div>
+
+<!-- DATA -->
+<div class="page" id="page-import">
+  <div class="page-title"><span class="accent">▲</span> Gestión de Datos</div>
+  <div class="page-subtitle">Importar y exportar datos del sistema</div>
+  <div class="io-card">
+    <div class="io-title">Exportar datos completos</div>
+    <div class="io-desc">Descarga todos los jugadores y entradas en formato JSON o CSV.</div>
+    <div class="io-row">
+      <button class="btn-primary" onclick="exportJSON()">↓ Exportar JSON</button>
+      <button class="btn-secondary" onclick="exportCSV()">↓ Exportar CSV</button>
+    </div>
+  </div>
+  <div class="io-card">
+    <div class="io-title">Importar entradas JSON</div>
+    <div class="io-desc">Sube un archivo JSON con la estructura <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">{ "entries": [...] }</code>. Las entradas serán añadidas a la base de datos.</div>
+    <div class="io-row">
+      <label class="file-input-label">
+        📂 Seleccionar archivo JSON
+        <input type="file" accept=".json" onchange="importJSON(event)">
+      </label>
+      <div id="import-status" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+  </div>
+  <div class="io-card">
+    <div class="io-title">Estado de conexión</div>
+    <div class="io-desc">La app está conectada a <strong>Supabase</strong>. Todos los datos se guardan en la nube y son visibles para el staff en tiempo real desde cualquier dispositivo.</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:0.5rem;">
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--green);"></div>
+      <span style="font-size:13px;color:var(--green);font-weight:600;">Conectado a Supabase</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const sb = window.supabase.createClient(
+  'https://djzrrxnbeulhcnmhikcr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqenJyeG5iZXVsaGNubWhpa2NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDE1NzEsImV4cCI6MjA5NjE3NzU3MX0.4hT-YzRhn_AzeXDrRBdLC3zon6ARvudR53oI65akltk'
+);
+
+const SEED_PLAYERS = [
+  {id:"p-yecxiel-vazquez",name:"Yecxiel Vazquez",team:"17M",number:"1",position:"S"},
+  {id:"p-alex-rodriguez",name:"Alex Rodriguez",team:"17M",number:"2",position:"OH"},
+  {id:"p-carlos-martinez",name:"Carlos Martinez",team:"17M",number:"3",position:"MH"},
+  {id:"p-miguel-torres",name:"Miguel Torres",team:"17M",number:"4",position:"OH"},
+  {id:"p-roberto-garcia",name:"Roberto Garcia",team:"17M",number:"6",position:"L"},
+  {id:"p-fernando-lopez",name:"Fernando Lopez",team:"17M",number:"9",position:"RH"},
+  {id:"p-antonio-rivera",name:"Antonio Rivera",team:"17M",number:"10",position:"MH"},
+  {id:"p-sebastian-colon",name:"Sebastian Colon",team:"15M",number:"1",position:"S"},
+  {id:"p-gabriel-morales",name:"Gabriel Morales",team:"15M",number:"2",position:"OH"},
+  {id:"p-daniel-reyes",name:"Daniel Reyes",team:"15M",number:"3",position:"MH"},
+  {id:"p-nicolas-flores",name:"Nicolas Flores",team:"15M",number:"4",position:"OH"},
+  {id:"p-andres-santos",name:"Andres Santos",team:"15M",number:"6",position:"L"},
+  {id:"p-marcelo-medina",name:"Marcelo Medina",team:"15M",number:"18",position:"OH"},
+  {id:"p-gustavo-perez",name:"Gustavo Perez",team:"14M",number:"3",position:"OH"},
+  {id:"p-ian-marrero",name:"Ian Marrero",team:"14M",number:"5",position:"S;L;"},
+  {id:"p-omar-declet-colon",name:"Omar Declet Colon",team:"14M",number:"6",position:"RH"},
+  {id:"p-vincent-maldonado",name:"Vincent Maldonado",team:"14M",number:"8",position:"RH"},
+  {id:"p-javier-segarra",name:"Javier Segarra",team:"14M",number:"9",position:"S"},
+  {id:"p-denian-andres",name:"Denian Andres",team:"14M",number:"10",position:"L"},
+  {id:"p-juan-santiago",name:"Juan Santiago",team:"14M",number:"11",position:"S"},
+  {id:"p-jean-flores-serrano",name:"Jean Flores Serrano",team:"14M",number:"15",position:"S"},
+  {id:"p-gonzalo-rosado",name:"Gonzalo Rosado",team:"14M",number:"28",position:"MH"},
+  {id:"p-diego-armando",name:"Diego Armando",team:"14M",number:"99",position:"RH"},
+  {id:"p-diego-santiago",name:"Diego Santiago",team:"17M",number:"7",position:"RH"},
+  {id:"p-jorge-cruz",name:"Jorge Cruz",team:"17M",number:"5",position:"S"},
+  {id:"p-arnaldi-pastrana",name:"Arnaldi Pastrana",team:"17M",number:"20",position:"MH"},
+  {id:"p-juan-figueroa",name:"Juan Figueroa",team:"17M",number:"8",position:"L"},
+  {id:"p-luis-caratini",name:"Luis Caratini",team:"15M",number:"5",position:"RH"}
+];
+
+let DB = { players: [], entries: [] };
+let currentPage = 'dashboard';
+let prevPage = 'dashboard';
+let currentFilter = { dash: 'ALL', roster: 'ALL' };
+let currentPlayerId = null;
+let formState = {};
+let playerLoadChartInstance = null;
+let teamLoadChartInstance = null;
+
+async function init() {
+  showLoading(true);
+  try {
+    await seedPlayersIfNeeded();
+    await loadAll();
+  } catch(e) {
+    toast('Error conectando a Supabase', true);
+    console.error(e);
+  }
+  showLoading(false);
+  if (!checkURLPlayer()) {
+    renderDashboard();
+    renderTeamLoadChart();
+  }
+}
+
+async function seedPlayersIfNeeded() {
+  const { data } = await sb.from('players').select('id').limit(1);
+  if (data && data.length > 0) return;
+  await sb.from('players').insert(SEED_PLAYERS);
+}
+
+async function loadAll() {
+  const [{ data: players }, { data: entries }] = await Promise.all([
+    sb.from('players').select('*').order('team').order('name'),
+    sb.from('entries').select('*').order('date', { ascending: false })
+  ]);
+  DB.players = players || [];
+  DB.entries = (entries || []).map(normalizeEntry);
+}
+
+function normalizeEntry(e) {
+  return {
+    id: e.id,
+    playerId: e.player_id,
+    date: e.date,
+    sessionLabel: e.session_label,
+    duration: e.duration,
+    rpe: e.rpe,
+    mood: e.mood,
+    sleepQuality: e.sleep_quality,
+    soreness: e.soreness,
+    stress: e.stress,
+    fatigue: e.fatigue,
+    motivation: e.motivation,
+    painConcern: e.pain_concern,
+    painZones: e.pain_zones,
+    notes: e.notes,
+    createdAt: e.created_at
+  };
+}
+
+function showLoading(v) {
+  document.getElementById('loading').style.display = v ? 'flex' : 'none';
+}
+
+function showPage(name, playerId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  prevPage = currentPage;
+  currentPage = name;
+  document.getElementById('page-' + name).classList.add('active');
+  const nl = document.querySelector(`.nav-link[onclick*="'${name}'"]`);
+  if (nl) nl.classList.add('active');
+  if (name === 'dashboard') { renderDashboard(); renderTeamLoadChart(); }
+  else if (name === 'roster') renderRoster();
+  else if (name === 'player' && playerId) renderPlayerPage(playerId);
+  else if (name === 'records') renderRecords();
+  window.scrollTo(0,0);
+}
+
+function goBack() { showPage(prevPage === 'player' ? 'dashboard' : prevPage); }
+
+function checkURLPlayer() {
+  const params = new URLSearchParams(window.location.search);
+  const pid = params.get('player');
+  if (pid) { showPage('player', pid); return true; }
+  return false;
+}
+
+function initials(name) { return name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+function rpeClass(rpe) { if (!rpe) return ''; return rpe >= 8 ? 'rpe-high' : rpe >= 6 ? 'rpe-mid' : 'rpe-low'; }
+function rpeColor(rpe) { if (!rpe) return ''; return rpe >= 8 ? 'rpe-high' : rpe >= 6 ? 'rpe-mid' : 'rpe-ok'; }
+function wdClass(field, val) {
+  if (!val) return 'wd-gray';
+  if (field === 'mood' || field === 'sleepQuality') return val <= 2 ? 'wd-red' : val === 3 ? 'wd-orange' : 'wd-green';
+  if (field === 'soreness' || field === 'stress') return val >= 4 ? 'wd-red' : val === 3 ? 'wd-orange' : 'wd-green';
+  return 'wd-gray';
+}
+function internalLoad(e) { return (e.rpe || 0) * (e.duration || 0); }
+function avgRpe(entries) {
+  if (!entries.length) return null;
+  return (entries.reduce((s,e)=>s+(e.rpe||0),0)/entries.length).toFixed(1);
+}
+function today() { return new Date().toISOString().slice(0,10); }
+function playerEntries(pid) { return DB.entries.filter(e=>e.playerId===pid).sort((a,b)=>b.date.localeCompare(a.date)); }
+function isAlert(e) {
+  if (!e) return null;
+  const r = [];
+  if (e.rpe >= 8) r.push('RPE ' + e.rpe);
+  if (e.sleepQuality <= 2) r.push('Sueño bajo');
+  if (e.soreness >= 4) r.push('Dolor alto');
+  if (e.stress >= 4) r.push('Estrés alto');
+  if (e.painConcern >= 2) r.push('Dolor preocupante');
+  return r.length ? r : null;
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function toast(msg, isError=false, dur=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', dur);
+}
+
+// ---- DASHBOARD ----
+function renderDashboard(teamFilter) {
+  if (teamFilter) currentFilter.dash = teamFilter;
+  const tf = currentFilter.dash;
+  const players = DB.players.filter(p => tf === 'ALL' || p.team === tf);
+  const latestEntries = DB.players.map(p => playerEntries(p.id)[0]).filter(Boolean);
+  const teamAvgRpe = latestEntries.length
+    ? (latestEntries.reduce((s,e)=>s+(e.rpe||0),0)/latestEntries.length).toFixed(1) : '—';
+  const totalLoad = DB.entries.reduce((s,e)=>s+internalLoad(e),0);
+
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Jugadores</div><div class="stat-value">${DB.players.length}</div><div class="stat-sub">14M · 15M · 17M</div></div>
+    <div class="stat-card"><div class="stat-label">Entradas RPE</div><div class="stat-value gold">${DB.entries.length}</div><div class="stat-sub">total acumulado</div></div>
+    <div class="stat-card"><div class="stat-label">RPE Promedio</div><div class="stat-value">${teamAvgRpe}</div><div class="stat-sub">último check-in por jugador</div></div>
+    <div class="stat-card"><div class="stat-label">Carga Total</div><div class="stat-value">${totalLoad.toLocaleString()}</div><div class="stat-sub">unidades acumuladas</div></div>
+  `;
+
+  const alertPlayers = [];
+  DB.players.forEach(p => {
+    const last = playerEntries(p.id)[0];
+    const reasons = isAlert(last);
+    if (reasons) alertPlayers.push({p, last, reasons});
+  });
+  const badge = document.getElementById('alert-badge');
+  badge.style.display = alertPlayers.length ? 'block' : 'none';
+  badge.textContent = alertPlayers.length + ' ⚠';
+
+  document.getElementById('dash-alerts').innerHTML = alertPlayers.length ? `
+    <div class="alerts-box">
+      <div class="alerts-title">🔴 Alertas (${alertPlayers.length})</div>
+      ${alertPlayers.map(({p,last,reasons}) => `
+        <div class="alert-item">
+          <div class="alert-dot ${reasons.some(r=>r.includes('RPE')) ? '' : 'orange'}"></div>
+          <div>
+            <span class="alert-player">${p.name}</span>
+            <span class="alert-reason"> — ${reasons.join(', ')}</span>
+            <span style="color:var(--muted);font-size:11px;margin-left:8px">${last.date} · ${last.sessionLabel||''}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : '';
+
+  document.getElementById('dash-players').innerHTML = players.map(p => playerCard(p)).join('');
+}
+
+function filterDash(team, el) {
+  document.querySelectorAll('#dash-filters .filter-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderDashboard(team);
+}
+
+// ---- GRÁFICA EQUIPOS ----
+function renderTeamLoadChart() {
+  const canvas = document.getElementById('team-load-chart');
+  if (!canvas) return;
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const fromStr = sevenDaysAgo.toISOString().slice(0,10);
+
+  const recentEntries = DB.entries.filter(e => e.date >= fromStr);
+
+  const playerTeamMap = {};
+  DB.players.forEach(p => { playerTeamMap[p.id] = p.team; });
+
+  const teamStats = {
+    '14M': { totalLoad: 0, activePlayers: new Set() },
+    '15M': { totalLoad: 0, activePlayers: new Set() },
+    '17M': { totalLoad: 0, activePlayers: new Set() }
+  };
+
+  recentEntries.forEach(e => {
+    const team = playerTeamMap[e.playerId];
+    if (!team || !teamStats[team]) return;
+    teamStats[team].totalLoad += internalLoad(e);
+    teamStats[team].activePlayers.add(e.playerId);
+  });
+
+  const teams = ['14M', '15M', '17M'];
+  const avgLoads = teams.map(t => {
+    const s = teamStats[t];
+    return s.activePlayers.size > 0 ? Math.round(s.totalLoad / s.activePlayers.size) : 0;
+  });
+
+  const ctx = canvas.getContext('2d');
+  if (teamLoadChartInstance) teamLoadChartInstance.destroy();
+
+  teamLoadChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: teams,
+      datasets: [{
+        label: 'Carga media (RPE × min)',
+        data: avgLoads,
+        backgroundColor: ['rgba(99,102,241,0.7)', 'rgba(20,184,166,0.7)', 'rgba(26,127,212,0.7)'],
+        borderColor: ['rgba(99,102,241,1)', 'rgba(20,184,166,1)', 'rgba(26,127,212,1)'],
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#f5f7fa' } },
+        tooltip: { callbacks: { label: ctx => `Carga media: ${ctx.parsed.y}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#8899bb' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Carga media por jugador activo', color: '#f5f7fa' },
+          ticks: { color: '#8899bb' }, grid: { color: 'rgba(148,163,184,0.1)' }
+        }
+      }
+    }
+  });
+}
+
+// ---- ROSTER ----
+function renderRoster(teamFilter) {
+  if (teamFilter) currentFilter.roster = teamFilter;
+  const tf = currentFilter.roster;
+  const players = DB.players.filter(p => tf === 'ALL' || p.team === tf);
+  document.getElementById('roster-grid').innerHTML = players.map(p => playerCard(p, true)).join('');
+}
+
+function filterRoster(team, el) {
+  document.querySelectorAll('#roster-filters .filter-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderRoster(team);
+}
+
+// ---- PLAYER CARD ----
+function playerCard(p, rosterMode=false) {
+  const entries = playerEntries(p.id);
+  const last = entries[0];
+  const avg = avgRpe(entries);
+  const load = last ? internalLoad(last) : 0;
+  const alertReasons = isAlert(last);
+  const alertClass = alertReasons ? (alertReasons.some(r=>r.includes('RPE')||r.includes('dolor')) ? 'alert-red' : 'alert-orange') : '';
+  const avClass = p.team === '17M' ? 'av-17m' : p.team === '15M' ? 'av-15m' : 'av-14m';
+  const bdgClass = p.team === '17M' ? 'badge-17m' : p.team === '15M' ? 'badge-15m' : 'badge-14m';
+  const checkinUrl = `${window.location.origin}${window.location.pathname}?player=${p.id}`;
+  const waUrl = `https://wa.me/?text=${encodeURIComponent('Check-in Vaqueros: ' + checkinUrl)}`;
+
+  return `
+    <div class="player-card ${alertClass}" onclick="openPlayer('${p.id}')">
+      <div class="player-top">
+        <div class="player-avatar ${avClass}">${initials(p.name)}</div>
+        <div class="player-info">
+          <div class="player-name">${p.name}</div>
+          <div class="player-meta">
+            <span class="player-badge ${bdgClass}">${p.team}</span>
+            <span class="player-badge badge-pos">#${p.number}</span>
+            <span class="player-badge badge-pos">${p.position}</span>
+          </div>
+        </div>
+      </div>
+      <div class="player-stats" style="margin-top:10px">
+        <div class="pstat"><div class="pstat-val ${last?rpeColor(last.rpe):''}">${last?last.rpe:'—'}</div><div class="pstat-lbl">Últ. RPE</div></div>
+        <div class="pstat"><div class="pstat-val">${avg||'—'}</div><div class="pstat-lbl">Prom.</div></div>
+        <div class="pstat"><div class="pstat-val">${last?internalLoad(last):'—'}</div><div class="pstat-lbl">Carga</div></div>
+        <div class="pstat"><div class="pstat-val">${entries.length}</div><div class="pstat-lbl">Entradas</div></div>
+      </div>
+      ${last ? `<div class="wellness-dots">
+        <div class="wd ${wdClass('mood',last.mood)}" title="Ánimo"></div>
+        <div class="wd ${wdClass('sleepQuality',last.sleepQuality)}" title="Sueño"></div>
+        <div class="wd ${wdClass('soreness',last.soreness)}" title="Dolor muscular"></div>
+        <div class="wd ${wdClass('stress',last.stress)}" title="Estrés"></div>
+      </div>` : ''}
+      ${rosterMode ? `<a class="card-link-btn" href="${waUrl}" target="_blank" onclick="event.stopPropagation()">📲 Enviar link WhatsApp</a>` : ''}
+    </div>`;
+}
+
+function openPlayer(pid) { showPage('player', pid); }
+
+// ---- PLAYER PAGE ----
+function renderPlayerPage(pid) {
+  currentPlayerId = pid;
+  const p = DB.players.find(x=>x.id===pid);
+  if (!p) { document.getElementById('player-content').innerHTML = '<div class="no-data">Jugador no encontrado.</div>'; return; }
+
+  const entries = playerEntries(pid);
+  const avClass = p.team === '17M' ? 'av-17m' : p.team === '15M' ? 'av-15m' : 'av-14m';
+  const bdgClass = p.team === '17M' ? 'badge-17m' : p.team === '15M' ? 'badge-15m' : 'badge-14m';
+  const checkinUrl = `${window.location.origin}${window.location.pathname}?player=${p.id}`;
+  const waUrl = `https://wa.me/?text=${encodeURIComponent('Check-in Vaqueros: ' + checkinUrl)}`;
+
+  document.getElementById('player-content').innerHTML = `
+    <div class="player-page-header">
+      <div class="player-page-avatar ${avClass}" style="font-size:28px;font-family:var(--font-display);font-weight:800;">${initials(p.name)}</div>
+      <div class="player-page-info">
+        <div class="player-page-name">${p.name}</div>
+        <div class="player-page-badges">
+          <span class="player-badge ${bdgClass}" style="font-size:12px;padding:4px 12px;">${p.team}</span>
+          <span class="player-badge badge-pos" style="font-size:12px;padding:4px 12px;">#${p.number}</span>
+          <span class="player-badge badge-pos" style="font-size:12px;padding:4px 12px;">${p.position}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <a class="player-page-link" href="${waUrl}" target="_blank">📲 WhatsApp</a>
+        <button class="player-page-link" onclick="navigator.clipboard.writeText('${checkinUrl}').then(()=>toast('Link copiado'))">📋 Copiar link</button>
+      </div>
+    </div>
+
+    <!-- GRÁFICA JUGADOR -->
+    <div class="chart-section">
+      <div class="chart-section-title">Tendencia RPE y carga interna</div>
+      <div class="chart-section-sub">Últimos 14 días. Carga interna = RPE × duración.</div>
+      <div style="position:relative;height:240px;">
+        <canvas id="player-load-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- FORMULARIO CHECK-IN -->
+    <div class="form-section">
+      <div class="form-section-title">✚ Nuevo Check-in</div>
+      <form id="checkin-form" onsubmit="submitCheckin(event,'${pid}')">
+        <div class="form-grid">
+          <div class="form-block">
+            <label class="form-label">Fecha</label>
+            <input class="form-input field-input" type="date" id="f-date" value="${today()}">
+          </div>
+          <div class="form-block">
+            <label class="form-label">Duración (min)</label>
+            <input class="form-input field-input" type="number" id="f-duration" value="80" min="0" step="5">
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">RPE (percepción de esfuerzo)</div>
+          <div class="field-help">1 = muy fácil · 10 = esfuerzo máximo</div>
+          <div class="btn-group btn-group-rpe" id="rpe-group">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" class="btn-rpe" data-value="${n}">${n}</button>`).join('')}
+          </div>
+          <input type="hidden" id="f-rpe" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Ánimo hoy</div>
+          <div class="field-help">Cómo te sientes emocionalmente.</div>
+          <div class="btn-group" id="mood-group">
+            <button type="button" class="btn-option" data-value="1">1 Muy mal</button>
+            <button type="button" class="btn-option" data-value="2">2 Mal</button>
+            <button type="button" class="btn-option" data-value="3">3 Normal</button>
+            <button type="button" class="btn-option" data-value="4">4 Bien</button>
+            <button type="button" class="btn-option" data-value="5">5 Muy bien</button>
+          </div>
+          <input type="hidden" id="f-mood" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Calidad de sueño</div>
+          <div class="field-help">Cómo dormiste la noche anterior.</div>
+          <div class="btn-group" id="sleep-group">
+            <button type="button" class="btn-option" data-value="1">1 Muy mal</button>
+            <button type="button" class="btn-option" data-value="2">2 Mal</button>
+            <button type="button" class="btn-option" data-value="3">3 Normal</button>
+            <button type="button" class="btn-option" data-value="4">4 Bien</button>
+            <button type="button" class="btn-option" data-value="5">5 Excelente</button>
+          </div>
+          <input type="hidden" id="f-sleep" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Dolor muscular general</div>
+          <div class="field-help">Dolor general de músculos por entrenar/jugar.</div>
+          <div class="btn-group" id="soreness-group">
+            <button type="button" class="btn-option" data-value="1">1 Muy fuerte</button>
+            <button type="button" class="btn-option" data-value="2">2 Fuerte</button>
+            <button type="button" class="btn-option" data-value="3">3 Moderado</button>
+            <button type="button" class="btn-option" data-value="4">4 Leve</button>
+            <button type="button" class="btn-option" data-value="5">5 Sin dolor</button>
+          </div>
+          <input type="hidden" id="f-soreness" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Estrés</div>
+          <div class="field-help">Qué tan estresado te sientes.</div>
+          <div class="btn-group" id="stress-group">
+            <button type="button" class="btn-option" data-value="1">1 Muy alto</button>
+            <button type="button" class="btn-option" data-value="2">2 Alto</button>
+            <button type="button" class="btn-option" data-value="3">3 Normal</button>
+            <button type="button" class="btn-option" data-value="4">4 Bajo</button>
+            <button type="button" class="btn-option" data-value="5">5 Muy bajo</button>
+          </div>
+          <input type="hidden" id="f-stress" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Fatiga general (cómo te sientes hoy)</div>
+          <div class="field-help">Escoge cómo se siente tu cuerpo hoy, antes de entrenar/jugar.</div>
+          <div class="btn-group" id="fatigue-group">
+            <button type="button" class="btn-option" data-value="1">1 Muy cansado</button>
+            <button type="button" class="btn-option" data-value="2">2 Bastante cansado</button>
+            <button type="button" class="btn-option" data-value="3">3 Normal</button>
+            <button type="button" class="btn-option" data-value="4">4 Bien</button>
+            <button type="button" class="btn-option" data-value="5">5 Muy fresco</button>
+          </div>
+          <input type="hidden" id="f-fatigue" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Ganas de entrenar/jugar hoy</div>
+          <div class="field-help">Qué tantas ganas tienes ahora mismo.</div>
+          <div class="btn-group" id="motivation-group">
+            <button type="button" class="btn-option" data-value="1">1 Sin ganas</button>
+            <button type="button" class="btn-option" data-value="2">2 Pocas ganas</button>
+            <button type="button" class="btn-option" data-value="3">3 Normal</button>
+            <button type="button" class="btn-option" data-value="4">4 Con ganas</button>
+            <button type="button" class="btn-option" data-value="5">5 Súper motivado</button>
+          </div>
+          <input type="hidden" id="f-motivation" value="">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">¿Tienes algún dolor que te preocupe para jugar?</div>
+          <div class="btn-group btn-group-compact" id="pain-concern-group">
+            <button type="button" class="btn-option active" data-value="0">0 No, ningún dolor</button>
+            <button type="button" class="btn-option" data-value="1">1 Sí, pero es leve</button>
+            <button type="button" class="btn-option" data-value="2">2 Sí, me molesta bastante</button>
+            <button type="button" class="btn-option" data-value="3">3 Sí, me duele mucho</button>
+          </div>
+          <input type="hidden" id="f-pain-concern" value="0">
+        </div>
+
+        <div class="field-group" id="pain-zones-container" style="display:none;">
+          <div class="field-label">¿Dónde te duele? (puedes marcar más de una)</div>
+          <div class="pain-zones-grid" id="pain-zones-grid">
+            <button type="button" class="btn-zone" data-zone="neck_shoulders">Cuello / Hombros</button>
+            <button type="button" class="btn-zone" data-zone="back">Espalda</button>
+            <button type="button" class="btn-zone" data-zone="shoulder_arm">Hombro / Brazo</button>
+            <button type="button" class="btn-zone" data-zone="elbow_forearm">Codo / Antebrazo</button>
+            <button type="button" class="btn-zone" data-zone="wrist_hand">Muñeca / Mano</button>
+            <button type="button" class="btn-zone" data-zone="hip_groin">Cadera / Ingle</button>
+            <button type="button" class="btn-zone" data-zone="thigh">Muslo</button>
+            <button type="button" class="btn-zone" data-zone="knee">Rodilla</button>
+            <button type="button" class="btn-zone" data-zone="calf">Pantorrilla</button>
+            <button type="button" class="btn-zone" data-zone="ankle_foot">Tobillo / Pie</button>
+          </div>
+          <input type="hidden" id="f-pain-zones" value="[]">
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Notas (opcional)</div>
+          <textarea class="form-textarea field-textarea" id="f-notes" rows="3" placeholder="Detalles extra, dolor específico, viaje, escuela..."></textarea>
+        </div>
+
+        <div class="save-row">
+          <button class="btn-primary" type="submit" id="save-btn">✓ Guardar check-in</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- HISTORIAL DEL JUGADOR -->
+    <div style="margin-top:1.5rem;">
+      <div class="section-header"><div class="section-title">Historial</div></div>
+      ${entries.length ? `
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead><tr>
+              <th>Fecha</th><th>RPE</th><th>Carga</th><th>Ánimo</th><th>Sueño</th><th>Dolor</th><th>Estrés</th><th>Fatiga</th><th>Motivación</th><th>Notas</th>
+            </tr></thead>
+            <tbody>
+              ${entries.map(e=>`<tr>
+                <td>${e.date}</td>
+                <td><span class="rpe-pill ${rpeClass(e.rpe)}">${e.rpe||'—'}</span></td>
+                <td>${internalLoad(e)||'—'}</td>
+                <td>${e.mood||'—'}</td>
+                <td>${e.sleepQuality||'—'}</td>
+                <td>${e.soreness||'—'}</td>
+                <td>${e.stress||'—'}</td>
+                <td>${e.fatigue||'—'}</td>
+                <td>${e.motivation||'—'}</td>
+                <td style="color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${e.notes||''}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : '<div class="no-data">Sin entradas aún.</div>'}
+    </div>`;
+
+  initCheckinForm();
+  buildPlayerLoadChart(pid);
+}
+
+// ---- INIT FORMULARIO ----
+function initCheckinForm() {
+  setupBtnGroup('rpe-group', 'btn-rpe', 'f-rpe');
+  setupBtnGroup('mood-group', 'btn-option', 'f-mood');
+  setupBtnGroup('sleep-group', 'btn-option', 'f-sleep');
+  setupBtnGroup('soreness-group', 'btn-option', 'f-soreness');
+  setupBtnGroup('stress-group', 'btn-option', 'f-stress');
+  setupBtnGroup('fatigue-group', 'btn-option', 'f-fatigue');
+  setupBtnGroup('motivation-group', 'btn-option', 'f-motivation');
+  initPainFields();
+}
+
+function setupBtnGroup(groupId, btnClass, hiddenId) {
+  const group = document.getElementById(groupId);
+  const hidden = document.getElementById(hiddenId);
+  if (!group || !hidden) return;
+  group.querySelectorAll('.' + btnClass).forEach(btn => {
+    btn.addEventListener('click', () => {
+      group.querySelectorAll('.' + btnClass).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      hidden.value = btn.getAttribute('data-value') || '';
+    });
+  });
+}
+
+function initPainFields() {
+  const concernGroup = document.getElementById('pain-concern-group');
+  const concernInput = document.getElementById('f-pain-concern');
+  const zonesContainer = document.getElementById('pain-zones-container');
+  const zonesGrid = document.getElementById('pain-zones-grid');
+  const zonesInput = document.getElementById('f-pain-zones');
+  if (!concernGroup) return;
+
+  concernGroup.querySelectorAll('.btn-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      concernGroup.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      concernInput.value = btn.getAttribute('data-value');
+      zonesContainer.style.display = parseInt(btn.getAttribute('data-value')) >= 1 ? 'block' : 'none';
+      if (parseInt(btn.getAttribute('data-value')) === 0) {
+        zonesGrid.querySelectorAll('.btn-zone').forEach(z => z.classList.remove('selected'));
+        zonesInput.value = '[]';
+      }
+    });
+  });
+
+  zonesGrid.querySelectorAll('.btn-zone').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('selected');
+      const selected = [...zonesGrid.querySelectorAll('.btn-zone.selected')].map(z => z.getAttribute('data-zone'));
+      zonesInput.value = JSON.stringify(selected);
+    });
+  });
+}
+
+// ---- SUBMIT CHECK-IN ----
+async function submitCheckin(e, pid) {
+  e.preventDefault();
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  const date = document.getElementById('f-date').value;
+  const duration = parseInt(document.getElementById('f-duration').value||'0',10);
+  const rpe = parseInt(document.getElementById('f-rpe').value||'0',10);
+  const mood = parseInt(document.getElementById('f-mood').value||'0',10);
+  const sleep_quality = parseInt(document.getElementById('f-sleep').value||'0',10);
+  const soreness = parseInt(document.getElementById('f-soreness').value||'0',10);
+  const stress = parseInt(document.getElementById('f-stress').value||'0',10);
+  const fatigue = parseInt(document.getElementById('f-fatigue').value||'0',10);
+  const motivation = parseInt(document.getElementById('f-motivation').value||'0',10);
+  const pain_concern = parseInt(document.getElementById('f-pain-concern').value||'0',10);
+  let pain_zones = [];
+  try { pain_zones = JSON.parse(document.getElementById('f-pain-zones').value||'[]'); } catch(err){}
+  const notes = document.getElementById('f-notes').value||'';
+
+  if (!date) { toast('Falta la fecha', true); btn.disabled=false; btn.textContent='✓ Guardar check-in'; return; }
+  if (!rpe) { toast('Selecciona el RPE', true); btn.disabled=false; btn.textContent='✓ Guardar check-in'; return; }
+
+  const { error } = await sb.from('entries').insert({
+    player_id: pid, date, duration, rpe, mood, sleep_quality, soreness, stress,
+    fatigue, motivation, pain_concern, pain_zones, notes
+  });
+
+  if (error) {
+    console.error(error);
+    toast('Error guardando. Intenta de nuevo.', true);
+    btn.disabled=false; btn.textContent='✓ Guardar check-in';
+    return;
+  }
+
+  await loadAll();
+  toast('Check-in guardado ✓');
+  renderPlayerPage(pid);
+}
+
+// ---- GRÁFICA JUGADOR ----
+function buildPlayerLoadChart(pid) {
+  const canvas = document.getElementById('player-load-chart');
+  if (!canvas) return;
+
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const fromStr = fourteenDaysAgo.toISOString().slice(0,10);
+
+  const entries = playerEntries(pid)
+    .filter(e => e.date >= fromStr)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  const labels = [], rpeData = [], loadData = [];
+  const seenDates = new Set();
+  entries.forEach(e => {
+    if (!e.date || seenDates.has(e.date)) return;
+    seenDates.add(e.date);
+    labels.push(e.date);
+    rpeData.push(e.rpe || 0);
+    loadData.push(internalLoad(e));
+  });
+
+  const ctx = canvas.getContext('2d');
+  if (playerLoadChartInstance) playerLoadChartInstance.destroy();
+
+  playerLoadChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'RPE', data: rpeData, borderColor: '#1a7fd4', backgroundColor: 'rgba(26,127,212,0.15)', tension: 0.3, yAxisID: 'y', pointRadius: 4 },
+        { label: 'Carga interna (RPE × min)', data: loadData, borderColor: '#d4a017', backgroundColor: 'rgba(212,160,23,0.15)', tension: 0.3, yAxisID: 'y1', pointRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#f5f7fa' } } },
+      scales: {
+        x: { ticks: { color: '#8899bb' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        y: { type: 'linear', position: 'left', min: 0, max: 10, title: { display: true, text: 'RPE', color: '#f5f7fa' }, ticks: { stepSize: 1, color: '#8899bb' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+        y1: { type: 'linear', position: 'right', title: { display: true, text: 'Carga interna', color: '#f5f7fa' }, ticks: { color: '#d4a017' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+}
+
+// ---- RECORDS ----
+function renderRecords() {
+  const search = document.getElementById('rec-search').value.toLowerCase();
+  const team = document.getElementById('rec-team').value;
+  const from = document.getElementById('rec-from').value;
+  const to = document.getElementById('rec-to').value;
+
+  let entries = DB.entries.filter(e => {
+    const p = DB.players.find(x=>x.id===e.playerId);
+    if (!p) return false;
+    if (team && p.team !== team) return false;
+    if (search && !p.name.toLowerCase().includes(search)) return false;
+    if (from && e.date < from) return false;
+    if (to && e.date > to) return false;
+    return true;
+  });
+
+  if (!entries.length) {
+    document.getElementById('records-table').innerHTML = '<div class="no-data">Sin entradas para estos filtros.</div>';
+    return;
+  }
+
+  document.getElementById('records-table').innerHTML = `
+    <div class="history-table-wrap">
+      <table class="history-table">
+        <thead><tr>
+          <th>Fecha</th><th>Jugador</th><th>Equipo</th><th>RPE</th><th>Carga</th><th>Ánimo</th><th>Sueño</th><th>Dolor</th><th>Estrés</th><th>Fatiga</th><th>Motivación</th><th>Dolor Preocu.</th><th>Notas</th>
+        </tr></thead>
+        <tbody>
+          ${entries.map(e=>{
+            const p = DB.players.find(x=>x.id===e.playerId);
+            return `<tr>
+              <td>${e.date}</td>
+              <td style="font-weight:600;cursor:pointer;color:var(--gold)" onclick="openPlayer('${e.playerId}')">${p?p.name:'—'}</td>
+              <td>${p?p.team:'—'}</td>
+              <td><span class="rpe-pill ${rpeClass(e.rpe)}">${e.rpe||'—'}</span></td>
+              <td>${internalLoad(e)||'—'}</td>
+              <td>${e.mood||'—'}</td>
+              <td>${e.sleepQuality||'—'}</td>
+              <td>${e.soreness||'—'}</td>
+              <td>${e.stress||'—'}</td>
+              <td>${e.fatigue||'—'}</td>
+              <td>${e.motivation||'—'}</td>
+              <td>${e.painConcern||'0'}</td>
+              <td style="color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;">${e.notes||''}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ---- EXPORT ----
+function exportJSON() {
+  const blob = new Blob([JSON.stringify({ players: DB.players, entries: DB.entries }, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `vaqueros_${today()}.json`; a.click();
+}
+
+function exportCSV() {
+  const headers = ['fecha','jugador','equipo','rpe','duracion','carga','animo','sueno','dolor_muscular','estres','fatiga','motivacion','dolor_preocupante','notas'];
+  const rows = DB.entries.map(e => {
+    const p = DB.players.find(x=>x.id===e.playerId);
+    return [e.date, p?p.name:'', p?p.team:'', e.rpe, e.duration, internalLoad(e), e.mood, e.sleepQuality, e.soreness, e.stress, e.fatigue||'', e.motivation||'', e.painConcern||0, `"${(e.notes||'').replace(/"/g,'""')}"`].join(',');
+  });
+  const blob = new Blob([[headers.join(','), ...rows].join('\n')], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `vaqueros_${today()}.csv`; a.click();
+}
+
+// ---- IMPORT ----
+async function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('import-status');
+  status.textContent = 'Leyendo archivo...';
+  try {
+    const text = await file.text();
+    const json = JSON.parse(text);
+    const entries = json.entries || [];
+    if (!entries.length) { status.textContent = 'No se encontraron entradas.'; return; }
+    const { error } = await sb.from('entries').insert(entries.map(e=>({
+      player_id: e.player_id||e.playerId,
+      date: e.date, duration: e.duration, rpe: e.rpe,
+      mood: e.mood, sleep_quality: e.sleep_quality||e.sleepQuality,
+      soreness: e.soreness, stress: e.stress,
+      fatigue: e.fatigue, motivation: e.motivation,
+      pain_concern: e.pain_concern||e.painConcern||0,
+      pain_zones: e.pain_zones||e.painZones||[],
+      notes: e.notes||''
+    })));
+    if (error) { status.textContent = 'Error importando: ' + error.message; return; }
+    await loadAll();
+    status.textContent = `✓ ${entries.length} entradas importadas.`;
+    toast(`${entries.length} entradas importadas`);
+  } catch(err) {
+    status.textContent = 'Error leyendo el archivo.';
+    console.error(err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
