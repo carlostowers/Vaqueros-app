@@ -195,6 +195,15 @@ input[type="file"]{display:none;}
 .gameday-stat{text-align:center;}
 .gameday-stat-val{font-family:var(--font-display);font-size:17px;font-weight:700;}
 .gameday-stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(8,15,30,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.modal-box{background:#0e1c35;border:1px solid var(--border);border-radius:14px;padding:2rem;width:100%;max-width:480px;}
+.modal-title{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.4rem;}
+.modal-subtitle{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
+.modal-actions{display:flex;gap:10px;margin-top:1.2rem;}
+.btn-ghost{background:transparent;color:var(--muted);font-family:var(--font-body);font-size:14px;font-weight:600;padding:10px 20px;border-radius:9px;border:1px solid var(--border);cursor:pointer;}
+.btn-ghost:hover{color:var(--white);}
+
 footer{background:rgba(8,15,30,0.8);border-top:1px solid var(--border);padding:1.2rem 1.5rem;margin-top:2rem;}
 .footer-inner{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;}
 .footer-link{color:var(--muted);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;}
@@ -698,6 +707,9 @@ function playerCard(p, rosterMode=false) {
         `:'<span style="font-size:11px;color:var(--muted)">Sin check-in</span>'}
       </div>
       <a class="card-link-btn" href="${waUrl}" target="_blank" onclick="event.stopPropagation()">📲 Enviar link WhatsApp</a>
+      <div class="card-link-btn" style="margin-top:6px;background:rgba(77,166,245,0.1);border-color:rgba(77,166,245,0.3);color:#4da6f5" onclick="openMsgModal('${p.id}',event)">
+        ✉️ ${p.coach_message ? 'Editar mensaje al jugador' : 'Escribir mensaje al jugador'}
+      </div>
     </div>`;
 }
 
@@ -1067,6 +1079,45 @@ function buildPlayerLoadChart(entries) {
   });
 }
 
+
+// ---- COACH MESSAGE ----
+let _msgPlayerId = null;
+
+function openMsgModal(pid, event) {
+  if (event) event.stopPropagation();
+  const p = DB.players.find(x => x.id === pid);
+  if (!p) return;
+  _msgPlayerId = pid;
+  document.getElementById('msg-modal-name').textContent = p.name;
+  document.getElementById('msg-textarea').value = p.coach_message || '';
+  document.getElementById('msg-modal').style.display = 'flex';
+}
+
+function closeMsgModal(event) {
+  if (!event || event.target === document.getElementById('msg-modal')) {
+    document.getElementById('msg-modal').style.display = 'none';
+  }
+}
+
+async function saveCoachMessage() {
+  const msg = document.getElementById('msg-textarea').value.trim();
+  if (!_msgPlayerId) return;
+  const { error } = await sb.from('players').update({ coach_message: msg || null }).eq('id', _msgPlayerId);
+  if (error) { toast('✗ Error guardando mensaje', true); return; }
+  await loadAll();
+  toast('✓ Mensaje guardado');
+  document.getElementById('msg-modal').style.display = 'none';
+}
+
+async function clearCoachMessage() {
+  if (!_msgPlayerId) return;
+  const { error } = await sb.from('players').update({ coach_message: null }).eq('id', _msgPlayerId);
+  if (error) { toast('✗ Error borrando mensaje', true); return; }
+  await loadAll();
+  toast('✓ Mensaje borrado');
+  document.getElementById('msg-modal').style.display = 'none';
+}
+
 // ---- RECORDS ----
 function renderRecords() {
   const search=(document.getElementById('rec-search')?.value||'').toLowerCase();
@@ -1149,5 +1200,23 @@ async function importJSON(event) {
 
 init();
 </script>
+
+<!-- COACH MESSAGE MODAL -->
+<div class="modal-overlay" id="msg-modal" style="display:none" onclick="closeMsgModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" id="msg-modal-name">Mensaje al jugador</div>
+    <div class="modal-subtitle">El jugador verá este mensaje la próxima vez que abra su link de check-in.</div>
+    <div class="form-block">
+      <label class="form-label">Mensaje del coach</label>
+      <textarea id="msg-textarea" class="form-textarea" rows="4" placeholder="Ej: Buen trabajo ayer. Descansa bien esta noche..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveCoachMessage()">✓ Guardar mensaje</button>
+      <button class="btn-ghost" onclick="clearCoachMessage()">🗑 Borrar mensaje</button>
+      <button class="btn-ghost" onclick="document.getElementById('msg-modal').style.display='none'">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
