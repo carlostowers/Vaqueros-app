@@ -642,6 +642,7 @@ function normalizeEntry(e) {
     painConcern: e.pain_concern,
     painZones: e.pain_zones,
     notes: e.notes,
+    playerNote: e.player_note,
     createdAt: e.created_at
   };
 }
@@ -1103,6 +1104,15 @@ function renderPlayerPage(pid) {
           <div class="field-label">Notas (opcional)</div>
           <textarea class="form-textarea field-textarea" id="f-notes" rows="3" placeholder="Detalles extra, dolor específico, viaje, escuela..."></textarea>
         </div>
+        <div class="form-section">
+  <div class="form-section-title">Mensaje al coach (opcional)</div>
+  <div class="form-grid">
+    <div class="form-block full">
+      <label class="form-label">¿Algo que quieras decirle al coach?</label>
+      <textarea id="player-note" class="form-textarea" placeholder="Escribe tu comentario aquí..."></textarea>
+    </div>
+  </div>
+</div>
 
         <div class="save-row">
           <button class="btn-primary" type="submit" id="save-btn">✓ Guardar check-in</button>
