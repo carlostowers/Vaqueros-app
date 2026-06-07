@@ -657,16 +657,73 @@ function renderTeamLoadChart() {
   });
 }
 
+
+// ---- WHATSAPP ----
+function sendWhatsApp(pid, event) {
+  if(event) event.stopPropagation();
+  const p = DB.players.find(x => x.id === pid);
+  if(!p || !p.phone) { toast('\u26a0 Este jugador no tiene tel\u00e9fono registrado', true); return; }
+  const baseUrl = window.location.origin + window.location.pathname;
+  const link = baseUrl + '?player=' + p.id;
+  const msg = 'Hola ' + p.name.split(' ')[0] + ' \ud83d\udc4b\nAqu\u00ed tu link de check-in Vaqueros \ud83c\udfd0\n' + link;
+  window.open('https://wa.me/1' + p.phone + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function sendAllWhatsApp(team) {
+  const players = DB.players.filter(p => p.team === team && p.phone);
+  const noPhone = DB.players.filter(p => p.team === team && !p.phone);
+  if(!players.length) { toast('\u26a0 Ning\u00fan jugador de ' + team + ' tiene tel\u00e9fono registrado', true); return; }
+  if(noPhone.length) toast('\u26a0 ' + noPhone.length + ' jugador(es) sin tel\u00e9fono ser\u00e1n omitidos', true);
+  const baseUrl = window.location.origin + window.location.pathname;
+  players.forEach((p, i) => {
+    setTimeout(() => {
+      const link = baseUrl + '?player=' + p.id;
+      const msg = 'Hola ' + p.name.split(' ')[0] + ' \ud83d\udc4b\nAqu\u00ed tu link de check-in Vaqueros \ud83c\udfd0\n' + link;
+      window.open('https://wa.me/1' + p.phone + '?text=' + encodeURIComponent(msg), '_blank');
+    }, i * 1500);
+  });
+  toast('\ud83d\udcf2 Enviando links a ' + players.length + ' jugadores de ' + team + '\u2026');
+}
+
 // ---- ROSTER ----
 function renderRoster(teamFilter) {
-  if(teamFilter) currentFilter.roster=teamFilter;
-  const tf=currentFilter.roster;
-  const players=DB.players.filter(p=>tf==='ALL'||p.team===tf);
-  document.getElementById('roster-grid').innerHTML=players.map(p=>playerCard(p,true)).join('');
+  if(teamFilter) currentFilter.roster = teamFilter;
+  const tf = currentFilter.roster;
+  const players = DB.players.filter(p => tf === 'ALL' || p.team === tf);
+  const teams = tf === 'ALL' ? ['17M','15M','14M'] : [tf];
+  const sendAllBtns = teams.map(t =>
+    '<button class="btn-secondary" style="font-size:13px;padding:8px 16px" onclick="sendAllWhatsApp(\'' + t + '\')">\ud83d\udcf2 Enviar todos ' + t + '</button>'
+  ).join('');
+  const cards = players.map(p => {
+    const avClass = p.team==='17M'?'av-17m':p.team==='15M'?'av-15m':'av-14m';
+    const bdgClass = p.team==='17M'?'badge-17m':p.team==='15M'?'badge-15m':'badge-14m';
+    const baseUrl = window.location.origin + window.location.pathname;
+    const checkinUrl = baseUrl + '?player=' + p.id;
+    const phone = p.phone ? p.phone.replace(/^(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3') : 'Sin tel\u00e9fono';
+    return '<div class="player-card">' +
+      '<div class="player-top">' +
+        '<div class="player-avatar ' + avClass + '">' + initials(p.name) + '</div>' +
+        '<div class="player-info">' +
+          '<div class="player-name">' + p.name + '</div>' +
+          '<div class="player-meta">' +
+            '<span class="player-badge ' + bdgClass + '">' + p.team + '</span>' +
+            '<span class="player-badge badge-pos">#' + p.number + '</span>' +
+            '<span class="player-badge badge-pos">' + p.position + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-top:6px">\ud83d\udcf1 ' + phone + '</div>' +
+      '<button class="card-link-btn" style="margin-top:8px" onclick="sendWhatsApp(\'' + p.id + '\', event)">\ud83d\udcf2 Enviar link por WhatsApp</button>' +
+      '<a class="card-link-btn" style="margin-top:6px;background:rgba(255,255,255,0.04)" href="' + checkinUrl + '" target="_blank" onclick="event.stopPropagation()">\ud83d\udd17 Ver link del jugador</a>' +
+    '</div>';
+  }).join('');
+  document.getElementById('roster-grid').innerHTML =
+    '<div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0.5rem">' + sendAllBtns + '</div>' + cards;
 }
-function filterRoster(team,el) {
-  document.querySelectorAll('#roster-filters .filter-tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); renderRoster(team);
+function filterRoster(team, el) {
+  document.querySelectorAll('#roster-filters .filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderRoster(team);
 }
 
 // ---- PLAYER CARD ----
