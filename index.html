@@ -1215,7 +1215,41 @@ async function importJSON(event) {
   reader.readAsText(file);
 }
 
-init();
+    init();
+
+    function confirmDeleteEntry(entryId, entryDate, pid) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.id = 'delete-modal';
+      modal.innerHTML = `
+        <div class="modal-box">
+          <div class="modal-title" style="color:var(--red)">🗑 Borrar entrada</div>
+          <div class="modal-subtitle">¿Seguro que quieres borrar la entrada del <strong>${entryDate}</strong>? Esta acción no se puede deshacer.</div>
+          <div class="modal-actions">
+            <button class="btn-ghost" onclick="document.getElementById('delete-modal').remove()">Cancelar</button>
+            <button class="btn-primary" style="background:var(--red)" onclick="deleteEntry('${entryId}', '${pid}')">Sí, borrar</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    async function deleteEntry(entryId, pid) {
+      const modal = document.getElementById('delete-modal');
+      if (modal) modal.remove();
+      showLoading(true);
+      const { error } = await sb.from('entries').delete().eq('id', entryId);
+      showLoading(false);
+      if (error) {
+        toast('Error al borrar la entrada', true);
+        console.error(error);
+        return;
+      }
+      DB.entries = DB.entries.filter(e => e.id !== entryId);
+      toast('Entrada borrada ✓');
+      renderPlayerPage(pid);
+    }
+
 </script>
 
 <!-- COACH MESSAGE MODAL -->
