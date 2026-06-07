@@ -412,6 +412,7 @@ function ensureStaffAccess() {
   const stored = localStorage.getItem('vaq_staff_pass');
   if (stored === STAFF_PASSWORD) return true;
   const input = prompt('Contraseña del staff:');
+  if (input === null) return false;
   if (input === STAFF_PASSWORD) { localStorage.setItem('vaq_staff_pass', STAFF_PASSWORD); return true; }
   alert('Contraseña incorrecta.');
   return false;
@@ -680,7 +681,8 @@ function playerCard(p, rosterMode=false) {
   const alertClass=alertReasons?(alertReasons.some(r=>r.includes('RPE'))?'alert-red':'alert-orange'):'';
   const avClass=p.team==='17M'?'av-17m':p.team==='15M'?'av-15m':'av-14m';
   const bdgClass=p.team==='17M'?'badge-17m':p.team==='15M'?'badge-15m':'badge-14m';
-  const checkinUrl=`${window.location.origin}${window.location.pathname}?player=${p.id}`;
+  const baseUrl=window.location.origin+window.location.pathname;
+  const checkinUrl=`${baseUrl}?player=${p.id}`;
   const waUrl=`https://wa.me/?text=${encodeURIComponent('Check-in Vaqueros: '+checkinUrl)}`;
   return `
     <div class="player-card ${alertClass}" onclick="openPlayer('${p.id}')">
@@ -996,7 +998,7 @@ function initCheckinForm(pid, isTournament) {
   }
 
   const form=document.getElementById('checkin-form');
-  if(form) form.addEventListener('submit',async(e)=>{e.preventDefault();await saveEntry(pid);});
+  if(form) form.addEventListener('submit',async(e)=>{e.preventDefault();await saveEntry(pid,isTournament);});
 }
 
 function setupBtnGroup(groupId, btnClass, hiddenId) {
@@ -1018,6 +1020,7 @@ async function saveEntry(pid) {
   const sleepVal=parseInt(document.getElementById('f-sleepQuality')?.value||'0');
   if(!moodVal||!sleepVal){toast('⚠ Completa al menos Ánimo y Sueño',true);return;}
   const btn=document.getElementById('save-btn');
+  const originalBtnText=btn?btn.textContent:null;
   if(btn){btn.disabled=true;btn.textContent='Guardando…';}
   let pain_zones=[];
   try{pain_zones=JSON.parse(document.getElementById('f-pain-zones')?.value||'[]');}catch(e){}
@@ -1041,7 +1044,7 @@ async function saveEntry(pid) {
   const{error}=await sb.from('entries').insert(entry);
   if(error){
     toast('✗ Error: '+error.message,true);
-    if(btn){btn.disabled=false;btn.textContent='✓ Guardar check-in';}
+    if(btn){btn.disabled=false;btn.textContent=originalBtnText||'✓ Guardar check-in';}
     return;
   }
   await loadAll();
@@ -1053,7 +1056,7 @@ async function saveEntry(pid) {
 async function loadPlayerEntriesForChart(pid) {
   const fromDate=new Date(); fromDate.setDate(fromDate.getDate()-30);
   const fromStr=fromDate.toISOString().slice(0,10);
-  const{data,error}=await sb.from('entries').select('date,duration,rpe').eq('player_id',pid).gte('date',fromStr).order('date',{ascending:true});
+  const{data,error}=await sb.from('entries').select('date,duration,rpe,mood,sleep_quality,soreness,stress,fatigue,motivation').eq('player_id',pid).gte('date',fromStr).order('date',{ascending:true});
   if(error){console.error(error);return[];}
   return data||[];
 }
@@ -1134,6 +1137,9 @@ async function clearCoachMessage() {
 }
 
 // ---- RECORDS ----
+function htmlEscape(s){
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function renderRecords() {
   const search=(document.getElementById('rec-search')?.value||'').toLowerCase();
   const team=document.getElementById('rec-team')?.value||'';
@@ -1150,18 +1156,20 @@ function renderRecords() {
   });
   const container=document.getElementById('records-table');
   if(!entries.length){container.innerHTML='<div class="no-data">No hay entradas con esos filtros.</div>';return;}
-  const rows=entries.map(e=>{
+  const total=entries.length;
+  const display=entries.slice(0,200);
+  const rows=display.map(e=>{
     const p=DB.players.find(x=>x.id===e.playerId)||{};
     const bdg=p.team==='17M'?'badge-17m':p.team==='15M'?'badge-15m':'badge-14m';
     return`<tr>
       <td>${e.date}</td>
-      <td style="font-weight:600;cursor:pointer;color:var(--blue-light)" onclick="openPlayer('${e.playerId}')">${p.name||'—'}</td>
+      <td style="font-weight:600;cursor:pointer;color:var(--blue-light)" onclick="openPlayer('${e.playerId}')">${htmlEscape(p.name)||'—'}</td>
       <td><span class="player-badge ${bdg}">${p.team||'—'}</span></td>
       <td><span class="rpe-pill ${rpeClass(e.rpe)}">${e.rpe}</span></td>
       <td>${e.duration??'—'}</td><td>${internalLoad(e)||'—'}</td>
       <td>${e.mood??'—'}</td><td>${e.sleepQuality??'—'}</td>
       <td>${e.soreness??'—'}</td><td>${e.stress??'—'}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${e.notes||''}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${htmlEscape(e.notes)}</td>
     </tr>`;
   }).join('');
   container.innerHTML=`
@@ -1171,7 +1179,7 @@ function renderRecords() {
         <tbody>${rows}</tbody>
       </table>
     </div>
-    <div style="margin-top:10px;font-size:13px;color:var(--muted)">${entries.length} entradas</div>`;
+    <div style="margin-top:10px;font-size:13px;color:var(--muted)">${display.length} de ${total} entradas${total>200?' — usa los filtros para ver más':''}</div>`;
 }
 
 // ---- EXPORT / IMPORT ----
@@ -1207,7 +1215,7 @@ async function importJSON(event) {
         pain_concern:e.painConcern||e.pain_concern,pain_zones:e.painZones||e.pain_zones,
         notes:e.notes,player_note:e.playerNote||e.player_note
       }));
-      const{error}=await sb.from('entries').insert(toInsert);
+      const{error}=await sb.from('entries').upsert(toInsert,{onConflict:'id'});
       if(error) throw error;
       await loadAll();
       document.getElementById('import-status').textContent=`✓ ${toInsert.length} entradas importadas`;
@@ -1232,7 +1240,7 @@ init();
     <div class="modal-actions">
       <button class="btn-primary" onclick="saveCoachMessage()">✓ Guardar mensaje</button>
       <button class="btn-ghost" onclick="clearCoachMessage()">🗑 Borrar mensaje</button>
-      <button class="btn-ghost" onclick="document.getElementById('msg-modal').style.display='none'">Cancelar</button>
+      <button class="btn-ghost" onclick="closeMsgModal()">Cancelar</button>
     </div>
   </div>
 </div>
