@@ -783,7 +783,7 @@ function renderPlayerPage(pid) {
   const avClass=p.team==='17M'?'av-17m':p.team==='15M'?'av-15m':'av-14m';
   const bdgClass=p.team==='17M'?'badge-17m':p.team==='15M'?'badge-15m':'badge-14m';
   const coachMsg=p.coach_message;
-  const coachBanner=coachMsg?`<div class="coach-banner"><strong>Mensaje de tu coach:</strong> ${coachMsg}</div>`:'';
+  const coachBanner=coachMsg?`<div class="coach-banner"><strong>Mensaje de tu coach:</strong> ${htmlEscape(coachMsg)}</div>`:'';
   const gameDayBanner=isTournament?`<div class="gameday-banner">🏆 Modo Torneo activado — Check-in Game Day</div>`:'';
 
   const histRows=entries.slice(0,10).map(e=>`
@@ -1125,6 +1125,11 @@ async function saveCoachMessage() {
   await loadAll();
   toast('✓ Mensaje guardado');
   document.getElementById('msg-modal').style.display = 'none';
+  if (currentPage === 'player' && currentPlayerId === _msgPlayerId) {
+    renderPlayerPage(_msgPlayerId);
+  } else {
+    renderDashboard();
+  }
 }
 
 async function clearCoachMessage() {
@@ -1134,6 +1139,11 @@ async function clearCoachMessage() {
   await loadAll();
   toast('✓ Mensaje borrado');
   document.getElementById('msg-modal').style.display = 'none';
+  if (currentPage === 'player' && currentPlayerId === _msgPlayerId) {
+    renderPlayerPage(_msgPlayerId);
+  } else {
+    renderDashboard();
+  }
 }
 
 // ---- RECORDS ----
