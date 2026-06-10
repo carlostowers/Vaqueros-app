@@ -44,7 +44,33 @@
   --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-full:20px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--font-body);background:var(--navy);color:var(--white);min-height:100vh;font-size:15px;}
+body{font-family:var(--font-body);background:var(--navy);color:var(--white);min-height:100vh;font-size:15px;position:relative;}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(26,127,212,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 100% 50%, rgba(26,127,212,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 0% 80%, rgba(99,102,241,0.07) 0%, transparent 60%);
+  pointer-events:none;
+}
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:0;
+  background-image:
+    linear-gradient(rgba(77,166,245,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,166,245,0.025) 1px, transparent 1px),
+    linear-gradient(rgba(77,166,245,0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,166,245,0.012) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+  pointer-events:none;
+}
+nav,#loading,.modal-overlay,.toast{position:relative;z-index:100;}
+.page{position:relative;z-index:1;}
 nav{background:rgba(8,15,30,0.97);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 1px 3px rgba(0,0,0,0.4),0 8px 24px rgba(0,0,0,0.2);}
 .nav-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;padding:0 1.5rem;height:58px;gap:0;}
 .logo{display:flex;align-items:center;gap:10px;margin-right:2rem;}
@@ -61,7 +87,7 @@ nav{background:rgba(8,15,30,0.97);border-bottom:1px solid var(--border);position
 .page-title{font-family:var(--font-display);font-size:32px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:var(--white);display:flex;align-items:center;gap:12px;margin-bottom:0.3rem;}
 .page-title .accent{color:var(--blue-light);}
 .page-subtitle{color:var(--muted);font-size:14px;margin-bottom:2rem;}
-.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:2rem;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem;row-gap:10px;}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem 1.4rem;box-shadow:0 1px 3px rgba(0,0,0,0.15);transition:box-shadow 0.2s,border-color 0.2s;}
 .stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;}
 .stat-value{font-family:var(--font-display);font-size:34px;font-weight:700;color:var(--white);line-height:1;}
@@ -208,16 +234,31 @@ input[type="file"]{display:none;}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(8,15,30,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}
 .modal-box{background:#0e1c35;border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:480px;box-shadow:0 8px 32px rgba(0,0,0,0.5),0 2px 8px rgba(0,0,0,0.3);}
+
+/* Slide-over panel */
+.slideover-backdrop{position:fixed;inset:0;background:rgba(8,15,30,0.6);z-index:300;opacity:0;transition:opacity 0.25s;pointer-events:none;}
+.slideover-backdrop.open{opacity:1;pointer-events:all;}
+.slideover-panel{position:fixed;top:0;right:0;height:100%;width:380px;max-width:92vw;background:#0e1c35;border-left:1px solid var(--border);z-index:301;transform:translateX(100%);transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,0.4);}
+.slideover-panel.open{transform:translateX(0);}
+.slideover-header{display:flex;align-items:center;justify-content:space-between;padding:1.4rem 1.6rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+.slideover-title{font-family:var(--font-display);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;color:var(--white);}
+.slideover-close{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--muted);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s,color 0.15s;line-height:1;}
+.slideover-close:hover{background:rgba(255,255,255,0.12);color:var(--white);}
+.slideover-meta{padding:1rem 1.6rem 0.6rem;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);flex-shrink:0;}
+.slideover-body{padding:1.4rem 1.6rem;overflow-y:auto;flex:1;font-size:14px;line-height:1.7;color:var(--white);white-space:pre-wrap;}
 .modal-title{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.4rem;}
 .modal-subtitle{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
 .modal-actions{display:flex;gap:10px;margin-top:1.2rem;}
 .btn-ghost{background:transparent;color:var(--muted);font-family:var(--font-body);font-size:14px;font-weight:600;padding:10px 20px;border-radius:8px;border:1px solid var(--border);cursor:pointer;}
 .btn-ghost:hover{color:var(--white);}
 
-footer{background:rgba(8,15,30,0.8);border-top:1px solid var(--border);padding:1.2rem 1.5rem;margin-top:2rem;}
-.footer-inner{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;}
-.footer-link{color:var(--muted);font-size:13px;text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;}
-.footer-link:hover{color:var(--blue-light);}
+footer{background:rgba(8,15,30,0.8);border-top:1px solid var(--border);padding:1.4rem 1.5rem;margin-top:2rem;position:relative;z-index:1;}
+.footer-inner{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:center;}
+.footer-link{color:var(--muted);font-size:12px;font-weight:600;letter-spacing:0.04em;text-decoration:none;display:flex;align-items:center;gap:7px;transition:color 0.15s,transform 0.15s;padding:4px 6px;border-radius:8px;}
+.footer-link:hover{color:var(--white);transform:translateY(-2px);}
+.footer-fb:hover{color:#1877F2;}
+.footer-ig:hover{color:#e1306c;}
+.footer-yt:hover{color:#FF0000;}
 @media(max-width:700px){
   .nav-links{display:none;}
   .page{padding:1.2rem 1rem 3rem;}
@@ -402,11 +443,80 @@ footer{background:rgba(8,15,30,0.8);border-top:1px solid var(--border);padding:1
 
 <footer>
   <div class="footer-inner">
-    <a class="footer-link" href="https://www.facebook.com/clubvoleibolvaqueros" target="_blank">📘 Facebook</a>
-    <a class="footer-link" href="https://www.instagram.com/clubvoleibolvaqueros/" target="_blank">📷 IG Club</a>
-    <a class="footer-link" href="https://www.instagram.com/vaqueros_17_carlos/" target="_blank">📷 IG 17M</a>
-    <a class="footer-link" href="https://www.instagram.com/vaqueros_xv/" target="_blank">📷 IG 15M</a>
-    <a class="footer-link" href="https://www.youtube.com/@vaqueros15carlos" target="_blank">▶ YouTube 15M</a>
+    <!-- Facebook -->
+    <a class="footer-link footer-fb" href="https://www.facebook.com/clubvoleibolvaqueros" target="_blank" title="Facebook Club Vaqueros">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="#1877F2"/>
+        <path d="M16.5 8H14.5C13.948 8 13.5 8.448 13.5 9V11H16.5L16 14H13.5V22H10.5V14H8.5V11H10.5V9C10.5 6.79 12.29 5 14.5 5H16.5V8Z" fill="white"/>
+      </svg>
+      <span>Facebook</span>
+    </a>
+    <!-- Instagram Club -->
+    <a class="footer-link footer-ig" href="https://www.instagram.com/clubvoleibolvaqueros/" target="_blank" title="Instagram Club Vaqueros">
+      <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="ig-grad" cx="30%" cy="107%" r="150%">
+            <stop offset="0%" stop-color="#fdf497"/>
+            <stop offset="5%" stop-color="#fdf497"/>
+            <stop offset="45%" stop-color="#fd5949"/>
+            <stop offset="60%" stop-color="#d6249f"/>
+            <stop offset="90%" stop-color="#285AEB"/>
+          </radialGradient>
+        </defs>
+        <rect width="24" height="24" rx="6" fill="url(#ig-grad)"/>
+        <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="12" cy="12" r="4" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+      </svg>
+      <span>IG Club</span>
+    </a>
+    <!-- Instagram 17M -->
+    <a class="footer-link footer-ig" href="https://www.instagram.com/vaqueros_17_carlos/" target="_blank" title="Instagram 17M">
+      <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="ig-grad2" cx="30%" cy="107%" r="150%">
+            <stop offset="0%" stop-color="#fdf497"/>
+            <stop offset="5%" stop-color="#fdf497"/>
+            <stop offset="45%" stop-color="#fd5949"/>
+            <stop offset="60%" stop-color="#d6249f"/>
+            <stop offset="90%" stop-color="#285AEB"/>
+          </radialGradient>
+        </defs>
+        <rect width="24" height="24" rx="6" fill="url(#ig-grad2)"/>
+        <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="12" cy="12" r="4" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+      </svg>
+      <span>IG 17M</span>
+    </a>
+    <!-- Instagram 15M -->
+    <a class="footer-link footer-ig" href="https://www.instagram.com/vaqueros_xv/" target="_blank" title="Instagram 15M">
+      <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="ig-grad3" cx="30%" cy="107%" r="150%">
+            <stop offset="0%" stop-color="#fdf497"/>
+            <stop offset="5%" stop-color="#fdf497"/>
+            <stop offset="45%" stop-color="#fd5949"/>
+            <stop offset="60%" stop-color="#d6249f"/>
+            <stop offset="90%" stop-color="#285AEB"/>
+          </radialGradient>
+        </defs>
+        <rect width="24" height="24" rx="6" fill="url(#ig-grad3)"/>
+        <rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="12" cy="12" r="4" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="17.5" cy="6.5" r="1.2" fill="white"/>
+      </svg>
+      <span>IG 15M</span>
+    </a>
+    <!-- YouTube 15M -->
+    <a class="footer-link footer-yt" href="https://www.youtube.com/@vaqueros15carlos" target="_blank" title="YouTube 15M">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="24" height="24" rx="6" fill="#FF0000"/>
+        <path d="M21.8 8.2C21.6 7.4 20.9 6.8 20.1 6.6C18.5 6.2 12 6.2 12 6.2C12 6.2 5.5 6.2 3.9 6.6C3.1 6.8 2.4 7.4 2.2 8.2C1.8 9.8 1.8 12 1.8 12C1.8 12 1.8 14.2 2.2 15.8C2.4 16.6 3.1 17.2 3.9 17.4C5.5 17.8 12 17.8 12 17.8C12 17.8 18.5 17.8 20.1 17.4C20.9 17.2 21.6 16.6 21.8 15.8C22.2 14.2 22.2 12 22.2 12C22.2 12 22.2 9.8 21.8 8.2Z" fill="#FF0000"/>
+        <path d="M10 15L15.5 12L10 9V15Z" fill="white"/>
+      </svg>
+      <span>YouTube 15M</span>
+    </a>
   </div>
 </footer>
 
@@ -453,7 +563,7 @@ const SEED_PLAYERS = [
   {id:"p-diego-armando",name:"Diego Armando",team:"14M",number:"99",position:"RH"}
 ];
 
-const STAFF_PASSWORD = 'Vaqueros2026';
+const STAFF_PASSWORD = '99';
 let staffUnlocked = false;
 function ensureStaffAccess() {
   const params = new URLSearchParams(window.location.search);
@@ -636,16 +746,30 @@ function renderDashboard(teamFilter) {
   if(teamFilter) currentFilter.dash=teamFilter;
   const tf=currentFilter.dash;
   const players=DB.players.filter(p=>tf==='ALL'||p.team===tf);
-  const latestEntries=DB.players.map(p=>playerEntries(p.id)[0]).filter(Boolean);
-  const teamAvgRpe=latestEntries.length?(latestEntries.reduce((s,e)=>s+(e.rpe||0),0)/latestEntries.length).toFixed(1):'—';
-  const totalLoad=DB.entries.reduce((s,e)=>s+internalLoad(e),0);
 
-  document.getElementById('dash-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Jugadores</div><div class="stat-value">${DB.players.length}</div><div class="stat-sub">14M · 15M · 17M</div></div>
-    <div class="stat-card"><div class="stat-label">Entradas RPE</div><div class="stat-value blue">${DB.entries.length}</div><div class="stat-sub">total acumulado</div></div>
-    <div class="stat-card"><div class="stat-label">RPE Promedio</div><div class="stat-value">${teamAvgRpe}</div><div class="stat-sub">último check-in</div></div>
-    <div class="stat-card"><div class="stat-label">Carga Total</div><div class="stat-value">${totalLoad.toLocaleString()}</div><div class="stat-sub">unidades</div></div>
-  `;
+  // Per-team stats
+  const teamColors = { '17M': 'var(--blue-light)', '15M': '#2dd4bf', '14M': '#a5b4fc' };
+  const teamOrder = ['17M','15M','14M'];
+  const teamsToShow = tf === 'ALL' ? teamOrder : [tf];
+
+  document.getElementById('dash-stats').innerHTML = teamsToShow.map(team => {
+    const tPlayers = DB.players.filter(p => p.team === team);
+    const tEntries = DB.entries.filter(e => tPlayers.some(p => p.id === e.playerId));
+    const tLatest = tPlayers.map(p => playerEntries(p.id)[0]).filter(Boolean);
+    const tAvgRpe = tLatest.length ? (tLatest.reduce((s,e)=>s+(e.rpe||0),0)/tLatest.length).toFixed(1) : '—';
+    const tLoad = tEntries.reduce((s,e)=>s+internalLoad(e),0);
+    const color = teamColors[team];
+    return `
+      <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:0.5rem;margin-bottom:0.2rem;">
+        <div style="width:3px;height:22px;border-radius:2px;background:${color};flex-shrink:0;"></div>
+        <span style="font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:${color}">${team}</span>
+      </div>
+      <div class="stat-card"><div class="stat-label">Jugadores</div><div class="stat-value">${tPlayers.length}</div><div class="stat-sub">${team}</div></div>
+      <div class="stat-card"><div class="stat-label">Entradas RPE</div><div class="stat-value" style="color:${color}">${tEntries.length}</div><div class="stat-sub">total acumulado</div></div>
+      <div class="stat-card"><div class="stat-label">RPE Promedio</div><div class="stat-value">${tAvgRpe}</div><div class="stat-sub">último check-in</div></div>
+      <div class="stat-card"><div class="stat-label">Carga Total</div><div class="stat-value">${tLoad.toLocaleString()}</div><div class="stat-sub">unidades</div></div>
+    `;
+  }).join('');
 
   const alertPlayers=[];
   DB.players.forEach(p=>{
@@ -953,8 +1077,9 @@ function renderPlayerPage(pid) {
       <td><span class="rpe-pill ${rpeClass(e.rpe)}">${e.rpe}</span></td>
       <td>${internalLoad(e)}</td>
       <td>${e.mood??'—'} / ${e.sleepQuality??'—'} / ${e.soreness??'—'} / ${e.stress??'—'}</td>
-      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${e.notes||''}</td>
-      <td><button onclick="deleteEntry('${e.id}')" style="background:rgba(224,82,82,0.12);border:1px solid rgba(224,82,82,0.3);color:var(--red);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer" title="Eliminar">🗑</button></td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${e.notes||''}</td>
+      <td>${e.playerNote?`<button onclick="openNoteSlider('${htmlEscape(p.name)}','${e.date}',${JSON.stringify(e.playerNote||'')})" style="background:rgba(77,166,245,0.12);border:1px solid rgba(77,166,245,0.3);color:var(--blue-light);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer" title="Ver mensaje">💬</button>`:'<span style="color:var(--border)">—</span>'}</td>
+      ${isPlayerMode()?'<td></td>':`<td><button onclick="deleteEntry('${e.id}')" style="background:rgba(224,82,82,0.12);border:1px solid rgba(224,82,82,0.3);color:var(--red);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer" title="Eliminar">🗑</button></td>`}
     </tr>`).join('');
 
   const formHTML = isTournament ? buildGameDayForm() : buildPracticeForm();
@@ -979,7 +1104,7 @@ function renderPlayerPage(pid) {
       ${entries.length===0?emptyState('📋','Sin check-ins','Este jugador todavía no ha registrado ningún check-in diario.'):`
         <div class="history-table-wrap">
           <table class="history-table">
-            <thead><tr><th>Fecha</th><th>${isTournament?'Juegos':'Min'}</th><th>RPE</th><th>Carga</th><th>M/S/D/E</th><th>Notas</th><th></th></tr></thead>
+            <thead><tr><th>Fecha</th><th>${isTournament?'Juegos':'Min'}</th><th>RPE</th><th>Carga</th><th>M/S/D/E</th><th>Notas</th><th>Msg</th><th></th></tr></thead>
             <tbody>${histRows}</tbody>
           </table>
         </div>`}
@@ -1358,17 +1483,32 @@ function renderRecords() {
       <td>${e.mood??'—'}</td><td>${e.sleepQuality??'—'}</td>
       <td>${e.soreness??'—'}</td><td>${e.stress??'—'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${htmlEscape(e.notes)}</td>
-      <td><button onclick="deleteEntry('${e.id}')" style="background:rgba(224,82,82,0.12);border:1px solid rgba(224,82,82,0.3);color:var(--red);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer" title="Eliminar entrada">🗑</button></td>
+      <td>${e.playerNote?`<button onclick="openNoteSlider('${htmlEscape(p.name||'')}','${e.date}',${JSON.stringify(e.playerNote||'')})" style="background:rgba(77,166,245,0.12);border:1px solid rgba(77,166,245,0.3);color:var(--blue-light);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer" title="Ver mensaje">💬</button>`:'<span style="color:var(--border)">—</span>'}</td>
+      <td>${isPlayerMode()?'':`<button onclick="deleteEntry('${e.id}')" style="background:rgba(224,82,82,0.12);border:1px solid rgba(224,82,82,0.3);color:var(--red);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer" title="Eliminar entrada">🗑</button>`}</td>
     </tr>`;
   }).join('');
   container.innerHTML=`
     <div class="history-table-wrap">
       <table class="history-table">
-        <thead><tr><th>Fecha</th><th>Jugador</th><th>Equipo</th><th>RPE</th><th>Dur.</th><th>Carga</th><th>Ánimo</th><th>Sueño</th><th>Dolor</th><th>Estrés</th><th>Notas</th><th>Acción</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Jugador</th><th>Equipo</th><th>RPE</th><th>Dur.</th><th>Carga</th><th>Ánimo</th><th>Sueño</th><th>Dolor</th><th>Estrés</th><th>Notas</th><th>Msg</th><th>Acción</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     <div style="margin-top:10px;font-size:13px;color:var(--muted)">${display.length} de ${total} entradas${total>200?' — usa los filtros para ver más':''}</div>`;
+}
+
+// ---- PLAYER NOTE SLIDE-OVER ----
+function openNoteSlider(playerName, date, note) {
+  document.getElementById('note-meta').textContent = playerName + ' · ' + date;
+  document.getElementById('note-body').textContent = note || '(Sin mensaje)';
+  document.getElementById('note-backdrop').classList.add('open');
+  document.getElementById('note-panel').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeNoteSlider() {
+  document.getElementById('note-backdrop').classList.remove('open');
+  document.getElementById('note-panel').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 // ---- EXPORT / IMPORT ----
@@ -1432,6 +1572,17 @@ init();
       <button class="btn-ghost" onclick="closeMsgModal()">Cancelar</button>
     </div>
   </div>
+</div>
+
+<!-- PLAYER NOTE SLIDE-OVER -->
+<div class="slideover-backdrop" id="note-backdrop" onclick="closeNoteSlider()"></div>
+<div class="slideover-panel" id="note-panel">
+  <div class="slideover-header">
+    <div class="slideover-title">💬 Mensaje del jugador</div>
+    <button class="slideover-close" onclick="closeNoteSlider()">✕</button>
+  </div>
+  <div class="slideover-meta" id="note-meta"></div>
+  <div class="slideover-body" id="note-body"></div>
 </div>
 
 </body>
